@@ -155,58 +155,42 @@ wgm_agree <- wgm_agree %>%
   mutate(Region = country_to_region[Country],
          Region = ifelse(is.na(Region), "Other/Unclassified", Region))
 
-
-library(ggplot2)
-library(plotly)
-
-p <- ggplot(wgm_agree, aes(
-  x = reorder(Country, percent_agree),
-  y = percent_agree,
-  text = paste("Country:", Country, "<br>Agreement:", percent_agree, "%")
-)) +
-  geom_point(color = "steelblue", size = 4) +
-  facet_wrap(~ Region, scales = "free_y", ncol = 1) +
-  coord_flip() +
-  labs(
-    title = "Agreement that Vaccines Are Safe by Country",
-    y = "Agreement Score (%)",
-    x = NULL
-  ) +
-  theme_minimal() +
-  theme(
-    strip.text = element_text(face = "bold", size = 12),
-    axis.text.y = element_blank(),  # Hide country names
-    axis.ticks.y = element_blank(),
-    plot.title = element_text(size = 16, face = "bold"),
-    plot.margin = margin(20, 20, 20, 20)
-  )
-
-# Convert to interactive plot
-ggplotly(p, tooltip = "text")
-
 ```
 
 ```{r}
-library(ggplot2)
-library(ggridges)
 library(plotly)
+library(ggplot2)
 library(dplyr)
 library(forcats)
+library(ggridges)
+library(crosstalk)
+library(bslib)
+library(htmltools)  # Needed for `browsable()` and `tagList()`
 
-# Filter and reorder
 wgm_agree_filtered <- wgm_agree %>%
   filter(Region != "Unclassified") %>%
   mutate(Region = fct_reorder(Region, percent_agree, .fun = median))
 
-# Static ggplot
-p <- ggplot(wgm_agree_filtered, aes(x = percent_agree, y = Region, fill = Region)) +
+
+shared_data <- SharedData$new(wgm_agree_filtered)
+
+
+# Base plot
+p <- ggplot(shared_data, aes(x = percent_agree, y = Region, fill = Region)) +
   geom_density_ridges(scale = 1.2, alpha = 0.6, color = "white") +
-  geom_point(aes(text = paste("Country:", Country, "<br>Score:", percent_agree)),
-             position = position_jitter(height = 0.1), size = 2, color = "black") +
+  geom_point(
+    aes(text = paste("Country:", Country, "<br>Score:", round(percent_agree * 100, 1), "%")),
+    position = position_jitter(height = 0.1),
+    size = 2,
+    color = "black"
+  ) +
+  scale_x_continuous(
+    limits = c(0.2, 1.0),
+    labels = scales::percent_format(accuracy = 1)
+  ) +
   labs(
-    title = "Distribution of Agreement That Vaccines Are Safe by Region",
-    x = "Agreement Score (%)",
-    y = "Region"
+    x = "Agreement",
+    y = NULL
   ) +
   theme_minimal() +
   theme(
@@ -214,10 +198,30 @@ p <- ggplot(wgm_agree_filtered, aes(x = percent_agree, y = Region, fill = Region
     legend.position = "none"
   )
 
-# Convert to interactive plot
-ggplotly(p, tooltip = "text")
 
+# Interactive plot
+plotly_obj <- ggplotly(p, tooltip = "text") %>%
+  layout(
+    title = list(
+      text = "<b>Belief that Vaccines are Safe by Region</b>",
+      x = 0,
+      xanchor = "left",
+      y = 0.95,
+      yanchor = "top",
+      font = list(size = 20, family = "Arial", color = "black")
+    )
+  )
+
+
+# Combine search bar and plot (stacked vertically)
+browsable(
+  tagList(
+    filter_select(id = "country", label = "Select Country", sharedData = shared_data, group = ~Country),
+    plotly_obj
+  )
+)
 ```
+
 
 # Part Two: Broad Visualization Improvement
 
