@@ -257,25 +257,79 @@ aesthetics used and which variables are specified for each.
 
 12. Improve the visualization above by either re-creating it with the issues you identified fixed OR by creating a new visualization that you believe tells the same story better.
 
+### <span style="color:#5DC863;"><strong>Agreement</strong></span> vs <span style="color:#2C0044;"><strong>Disagreement</strong></span> that Technology Will Increase the Number of Jobs in My Country in the Next Five Years
+
 ```{r}
 #| label: second-improved-visualization
-
 library(dplyr)
 library(tidyr)
-
-library(dplyr)
-library(tidyr)
+library(leaflet)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(sf)
+library(htmltools)
 
 # Pull just Q19 responses
 q19_overall <- wgm_clean %>%
   filter(Question == "Q19 Overall, do you think that science and technology will increase or decrease the number of jobs in your local area in the next five years?") %>%
   select(Country, Response, OverallPercent = `Column N %...4`) %>%
-  distinct() %>%  # One row per Country x Response
+  distinct() %>%
   pivot_wider(names_from = Response, values_from = OverallPercent)
 
+# Clean summary table
 q19_final <- q19_overall %>%
-  select(Country = 1, Increase = 2, Decrease = 3) %>%
+  select(Country, Increase, Decrease) %>%
   mutate(Total = Increase - Decrease)
+
+# Get country centroids
+world <- ne_countries(scale = "medium", returnclass = "sf") %>%
+  st_centroid()
+
+centroids <- world %>%
+  select(Country = name_long, geometry) %>%
+  st_coordinates() %>%
+  as.data.frame() %>%
+  bind_cols(Country = world$name_long)
+
+# Join coordinates to data
+q19_geo <- q19_final %>%
+  left_join(centroids, by = "Country") %>%
+  filter(!is.na(X) & !is.na(Y))
+
+# Create diverging palette
+max_val <- max(abs(q19_geo$Total))
+diverging_palette <- colorNumeric(
+  palette = colorRampPalette(c("#440154", "#C7E9B4", "#5DC863"))(100),
+  domain = c(-max_val * 0.5, max_val)
+)
+
+# Leaflet map (no search bar)
+leaflet(q19_geo) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addCircleMarkers(
+    lng = ~X,
+    lat = ~Y,
+    radius = 7,
+    color = ~diverging_palette(Total),
+    stroke = TRUE,
+    weight = 1,
+    opacity = 1,
+    fillOpacity = 0.9,
+    label = ~Country,
+    popup = ~paste0(
+      "<strong>", Country, "</strong><br>",
+      "Net Agreement: ", round(Total * 100, 1), "%"
+    )
+  ) %>%
+  addLegend(
+    "bottomright",
+    pal = diverging_palette,
+    values = ~Total,
+    title = "Net % Agreement",
+    labFormat = labelFormat(suffix = "%", transform = function(x) 100 * x),
+    opacity = 1
+  )
+
 ```
 
 ## Third Data Visualization Improvement
