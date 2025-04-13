@@ -260,7 +260,22 @@ aesthetics used and which variables are specified for each.
 ```{r}
 #| label: second-improved-visualization
 
+library(dplyr)
+library(tidyr)
 
+library(dplyr)
+library(tidyr)
+
+# Pull just Q19 responses
+q19_overall <- wgm_clean %>%
+  filter(Question == "Q19 Overall, do you think that science and technology will increase or decrease the number of jobs in your local area in the next five years?") %>%
+  select(Country, Response, OverallPercent = `Column N %...4`) %>%
+  distinct() %>%  # One row per Country x Response
+  pivot_wider(names_from = Response, values_from = OverallPercent)
+
+q19_final <- q19_overall %>%
+  select(Country = 1, Increase = 2, Decrease = 3) %>%
+  mutate(Total = Increase - Decrease)
 ```
 
 ## Third Data Visualization Improvement
