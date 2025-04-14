@@ -362,6 +362,127 @@ aesthetics used and which variables are specified for each.
 
 ```{r}
 #| label: third-improved-visualization
+#| fig-width: 12
+#| fig-height: 17
 
+library(dplyr)
+library(ggtext)
+
+# Step 1: Add region labels based on country names
+wgm_clean <- wgm_clean %>%
+  mutate(Region = case_when(
+    Country %in% c("Kenya", "Tanzania", "Uganda", "Ethiopia", "Rwanda", "Burundi") ~ "Eastern Africa",
+    Country %in% c("Chad", "Cameroon", "Central African Republic", "Democratic Republic of the Congo") ~ "Central Africa",
+    Country %in% c("Algeria", "Morocco", "Tunisia", "Libya", "Egypt") ~ "North Africa",
+    Country %in% c("South Africa", "Namibia", "Botswana", "Zimbabwe", "Lesotho") ~ "Southern Africa",
+    Country %in% c("Nigeria", "Ghana", "Senegal", "Ivory Coast", "Sierra Leone") ~ "Western Africa",
+
+    Country %in% c("Mexico", "Guatemala", "Honduras", "Nicaragua", "Costa Rica", "Panama") ~ "Central America & Mexico",
+    Country %in% c("United States", "Canada") ~ "Northern America",
+    Country %in% c("Brazil", "Argentina", "Colombia", "Chile", "Peru", "Venezuela") ~ "South America",
+
+    Country %in% c("Kazakhstan", "Uzbekistan", "Kyrgyzstan", "Turkmenistan", "Tajikistan") ~ "Central Asia",
+    Country %in% c("China", "Japan", "South Korea", "Taiwan", "Mongolia") ~ "East Asia",
+    Country %in% c("Indonesia", "Thailand", "Vietnam", "Malaysia", "Philippines", "Myanmar") ~ "Southeast Asia",
+    Country %in% c("India", "Pakistan", "Bangladesh", "Nepal", "Sri Lanka") ~ "South Asia",
+
+    Country %in% c("Iran", "Iraq", "Saudi Arabia", "Turkey", "Jordan", "Lebanon", "Israel") ~ "Middle East",
+    Country %in% c("Russia", "Ukraine", "Poland", "Romania", "Bulgaria", "Hungary") ~ "Eastern Europe",
+    Country %in% c("United Kingdom", "Ireland", "Sweden", "Norway", "Denmark") ~ "Northern Europe",
+    Country %in% c("Italy", "Spain", "Greece", "Portugal") ~ "Southern Europe",
+    Country %in% c("France", "Germany", "Netherlands", "Belgium", "Switzerland", "Austria") ~ "Western Europe",
+
+    Country %in% c("Australia", "New Zealand") ~ "Australia & New Zealand",
+    TRUE ~ NA_character_
+  ))
+
+
+# Build region summary with only three meaningful responses
+q30_region_summary <- wgm_clean %>%
+  filter(Question == "Q30 (If respondent believes science has disagreed with teachings of religion) Generally speaking, when science disagrees with the teachings of your religion, what do you believe? Science or the teachings of your religion?") %>%
+  filter(Response %in% c("Science", "The teachings of your religion", "(It depends)")) %>%
+  filter(!is.na(Region)) %>%
+  group_by(Region, Response) %>%
+  summarise(n = sum(`Unweighted Count...5`, na.rm = TRUE), .groups = "drop") %>%
+  group_by(Region) %>%
+  mutate(Percent = n / sum(n) * 100) %>%
+  ungroup()
+
+# ✅ Recode labels to match fill colors
+q30_region_summary <- q30_region_summary %>%
+  mutate(Response = recode(Response,
+    "The teachings of your religion" = "Religion",
+    "(It depends)" = "It depends"
+  ))
 
 ```
+
+```{r}
+#| fig-width: 20
+#| fig-height: 32
+
+library(ggplot2)
+library(ggtext)
+library(plotly)
+
+# ggplot object with tooltip and custom styling
+q30_hover_plot <- ggplot(q30_region_summary, aes(
+  x = Region,
+  y = Percent,
+  fill = Response,
+  text = paste0(Response, ": ", round(Percent, 1), "%")
+)) +
+  geom_col(position = "dodge", width = 0.75) +
+  scale_y_continuous(
+    breaks = seq(0, 75, by = 12.5),
+    labels = function(x) {
+      ifelse(x %in% c(25, 50, 75), paste0(x, "%"), "")
+    }
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Science" = "#FFD700",
+      "It depends" = "#00BFFF",
+      "Religion" = "#002147"
+    )
+  ) +
+  labs(
+    title = NULL,        
+    subtitle = NULL,
+    x = NULL,
+    y = NULL,
+    fill = NULL
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.y = element_text(size = 9),
+    axis.text.x = element_text(size = 9),
+    legend.position = "none",
+    plot.title = element_text(face = "bold", size = 12),
+    plot.subtitle = element_markdown(size = 10),
+    plot.title.position = "plot",
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank()
+  ) +
+  coord_flip()
+
+# Convert to interactive plot with custom title + subtitle
+ggplotly(q30_hover_plot, tooltip = "text") %>%
+  layout(
+    margin = list(l = 0, r = 10, t = 130, b = 50),  # Make room for two-line title
+    title = list(
+      text = paste0(
+        "<span style='font-size:18px'><b>Which Are You More Likely to Believe When There is Disagreement?</b></span><br>",
+        "<span style='font-size:14px'>",
+        "<span style='color:#FFD700'><b>Science</b></span>, ",
+        "the <span style='color:#002147'><b>Teachings of Your Religion</b></span>, or ",
+        "<span style='color:#00BFFF'><b>It Depends</b></span>",
+        "</span>"
+      ),
+      x = 0,
+      xanchor = "left",
+      yanchor = "top"
+    )
+  )
+```
+
