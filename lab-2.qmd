@@ -1,10 +1,10 @@
 ---
 title: "Lab 2"
-name: Matt Babb
+author: "Matt Babb"
 subtitle: "Advanced Data Visualization"
 editor: source
 embed-resources: true
-echo: false
+echo: true
 warning: false
 error: false
 
@@ -65,7 +65,7 @@ The aesthetics map to variables in the following ways:
 4. What type of graph would you call this? Meaning, what `geom` would you use
 to produce this plot?
 
-This appears to be a scatterplot that also creates a quasi-faceting effect by grouping countries based on region, and then separating them vertically depending on the median proportion of belief in vaccine health in each global region. I would use `geom_point()` to create this plot.
+This appears to be a scatterplot that also creates a quasi-faceting effect by grouping countries based on region, and then separating them vertically depending on the median proportion of belief in vaccine safety in each global region. I would use `geom_point()` to create this plot.
 
 
 5. Provide at least four problems or changes that would improve this graph. 
@@ -76,7 +76,8 @@ Four ways to improve this plot are:
 - Eliminate the legend
 - Double-code the points to further distinguish them beyond color
 - Eliminate the appearance of the y-axis in each facet representing something quantitative
-- Make points clickable so that one can see proportions for individual countries
+- Make points clickable so that one can see percentages for individual countries
+- *[Bonus]* I would add a search bar so that someone can search for individual countries
 
 ## Improving the Bad Visualization
 
@@ -90,13 +91,17 @@ them in separately, but you may also just use one if it suffices.
 ```{r}
 #| label: read-in-wellcome-data
 
+
 library(readxl)
 library(tidyverse)
 
+
 wgm_raw <- read_excel("wgm2018-dataset-crosstabs-all-countries.xlsx", skip = 2)
+
 
 wgm_clean <- wgm_raw %>%
   tidyr::fill(Question) 
+
 
 region_map <- list(
   "Asia" = c("Afghanistan", "Bangladesh", "India", "Iran", "Nepal", "Pakistan", "Sri Lanka",
@@ -125,6 +130,7 @@ region_map <- list(
              "Czech Republic", "Hungary", "Moldova", "Poland", "Romania", "Russia", 
              "Slovakia", "Ukraine")
 )
+
 ```
 
 6. Improve the visualization above by either re-creating it with the issues you
@@ -134,7 +140,6 @@ same story better.
 ```{r fig.width=12, fig.height=40}
 #| label: new-and-improved-visualization
 
-library(plotly)
 
 wgm_agree <- wgm_clean %>%
   filter(
@@ -147,9 +152,12 @@ wgm_agree <- wgm_clean %>%
   ) %>%
   arrange(desc(percent_agree))
 
+
 country_to_region <- unlist(lapply(names(region_map), function(region) {
   setNames(rep(region, length(region_map[[region]])), region_map[[region]])
-}))
+})
+)
+
 
 wgm_agree <- wgm_agree %>%
   mutate(Region = country_to_region[Country],
@@ -158,6 +166,7 @@ wgm_agree <- wgm_agree %>%
 ```
 
 ```{r}
+
 library(plotly)
 library(ggplot2)
 library(dplyr)
@@ -165,7 +174,8 @@ library(forcats)
 library(ggridges)
 library(crosstalk)
 library(bslib)
-library(htmltools)  # Needed for `browsable()` and `tagList()`
+library(htmltools)
+
 
 wgm_agree_filtered <- wgm_agree %>%
   filter(Region != "Unclassified") %>%
@@ -179,7 +189,8 @@ shared_data <- SharedData$new(wgm_agree_filtered)
 p <- ggplot(shared_data, aes(x = percent_agree, y = Region, fill = Region)) +
   geom_density_ridges(scale = 1.2, alpha = 0.6, color = "white") +
   geom_point(
-    aes(text = paste("Country:", Country, "<br>Score:", round(percent_agree * 100, 1), "%")),
+    aes(text = paste("Country:", Country, "<br>Score:",
+                     round(percent_agree * 100, 1), "%")),
     position = position_jitter(height = 0.1),
     size = 2,
     color = "black"
@@ -216,10 +227,14 @@ plotly_obj <- ggplotly(p, tooltip = "text") %>%
 # Combine search bar and plot (stacked vertically)
 browsable(
   tagList(
-    filter_select(id = "country", label = "Select Country", sharedData = shared_data, group = ~Country),
+    filter_select(id = "country",
+                  label = "Select Country",
+                  sharedData = shared_data,
+                  group = ~Country),
     plotly_obj
   )
 )
+
 ```
 
 
@@ -241,6 +256,7 @@ you think the authors meant to convey with it?
 ##### Original image (*Source: Wellcome Global Monitor, 2018, p. 92.*)
 
 ![science_jobs_original.jpg](science_jobs_original.jpg)
+This plot intends to show the net percentages of people in each global region who believe that technology will lead to an increase in jobs within their country in the next five years. Global regions are listed, as well as an average for the world. Bars are colored to indicate positive or negative net increase, and a line at `x = 0` is shown.
 
 8. List the variables that appear to be displayed in this visualization.
 
@@ -254,13 +270,22 @@ Variables include:
 9. Now that you're versed in the grammar of graphics (ggplot), list the
 aesthetics used and which variables are specified for each.
 
-
+- `x` is mapped to net percentage of the population in the global region that believes that jobs will increase in the next five years due to technology
+- `y` is mapped to the global region
+- `fill` is mapped to whether the net percentage is positive or negative
 
 10. What type of graph would you call this?
 
-
+I wold call this a horizontal bar chart. I would use `geom_bar()` to create this plot.
 
 11. List all of the problems or things you would improve about this graph.  
+
+This plot is already pretty reader friendly. And I will be turning it into a map. But if I were to keep it as a bar chart, the details I would change include:
+
+- Colorizing the description so that "Increase" is <span style="color:#FFD700"><strong>Yellow</strong></span> and "Decrease" is <span style="color:#002147"><strong>Dark Blue</strong></span>.
+- I would remove the percentage markers at the end of each bar and make the bars hoverable so there are fewer numbers on the page.
+- I would make the "World" bar a different color and more prominent. I actually missed that detail the first time I looked at it.
+- I would include fewer x-axis labels. Every unit of 5 does not need to be included if the bars are hoverable
 
 12. Improve the visualization above by either re-creating it with the issues you identified fixed OR by creating a new visualization that you believe tells the same story better.
 
@@ -268,6 +293,7 @@ aesthetics used and which variables are specified for each.
 
 ```{r}
 #| label: second-improved-visualization
+
 library(dplyr)
 library(tidyr)
 library(leaflet)
@@ -276,6 +302,7 @@ library(rnaturalearthdata)
 library(sf)
 library(htmltools)
 
+
 # Pull just Q19 responses
 q19_overall <- wgm_clean %>%
   filter(Question == "Q19 Overall, do you think that science and technology will increase or decrease the number of jobs in your local area in the next five years?") %>%
@@ -283,14 +310,17 @@ q19_overall <- wgm_clean %>%
   distinct() %>%
   pivot_wider(names_from = Response, values_from = OverallPercent)
 
+
 # Clean summary table
 q19_final <- q19_overall %>%
   select(Country, Increase, Decrease) %>%
   mutate(Total = Increase - Decrease)
 
+
 # Get country centroids
 world <- ne_countries(scale = "medium", returnclass = "sf") %>%
   st_centroid()
+
 
 centroids <- world %>%
   select(Country = name_long, geometry) %>%
@@ -298,10 +328,12 @@ centroids <- world %>%
   as.data.frame() %>%
   bind_cols(Country = world$name_long)
 
+
 # Join coordinates to data
 q19_geo <- q19_final %>%
   left_join(centroids, by = "Country") %>%
   filter(!is.na(X) & !is.na(Y))
+
 
 # Create diverging palette
 max_val <- max(abs(q19_geo$Total))
@@ -309,6 +341,7 @@ diverging_palette <- colorNumeric(
   palette = colorRampPalette(c("#440154", "#C7E9B4", "#5DC863"))(100),
   domain = c(-max_val * 0.5, max_val)
 )
+
 
 # Leaflet map (no search bar)
 leaflet(q19_geo) %>%
@@ -361,20 +394,27 @@ Variables include:
 
 - Percentage of people who believe science, their religion, or "it depends" when faced with an informational conflict between the two
 - Global region
-- Region medians
-- Countries
-
+- Color-coded bars so that different responses can be easily distinguished (colored <span style="color:#FFD700"><strong>Yellow</strong></span> for "Science", <span style="color:#002147"><strong>Dark Blue</strong></span> for "Religion", and <span style="color:#00BFFF"><strong>Light Blue</strong></span> for "It depends")
 
 15. Now that you're versed in the grammar of graphics (ggplot), list the
 aesthetics used and which variables are specified for each.
 
-
+- `x` is mapped to net percentage of the population in the global region that choose to believe either science, the teachings of their religion, or "it depends" when there is disagreement between them
+- `y` is mapped to the global region
+- `fill` is mapped to the response type
 
 16. What type of graph would you call this?
 
-
+I would call this a horizontal grouped bar plot. I would use `geom_bar()` to create this plot, with `position = "dodge"`.
 
 17. List all of the problems or things you would improve about this graph.  
+
+This plot is a little harder to look at than the previous one. Here are the changes I would make:
+
+- I would make the bars hoverable so that I can get rid of the copious percentages at the end of every bar.
+- I would eliminate the legend and code the colors into the title / subtitle
+- I would simplify the title
+- I would make the x-axis showing percentages for easy visual estimations, but I would have fewer grid lines
 
 18. Improve the visualization above by either re-creating it with the issues you identified fixed OR by creating a new visualization that you believe tells the same story better.
 
@@ -383,8 +423,10 @@ aesthetics used and which variables are specified for each.
 #| fig-width: 12
 #| fig-height: 17
 
+
 library(dplyr)
 library(ggtext)
+
 
 # Step 1: Add region labels based on country names
 wgm_clean <- wgm_clean %>%
@@ -412,13 +454,16 @@ wgm_clean <- wgm_clean %>%
 
     Country %in% c("Australia", "New Zealand") ~ "Australia & New Zealand",
     TRUE ~ NA_character_
-  ))
+  )
+)
 
 
 # Build region summary with only three meaningful responses
 q30_region_summary <- wgm_clean %>%
   filter(Question == "Q30 (If respondent believes science has disagreed with teachings of religion) Generally speaking, when science disagrees with the teachings of your religion, what do you believe? Science or the teachings of your religion?") %>%
-  filter(Response %in% c("Science", "The teachings of your religion", "(It depends)")) %>%
+  filter(Response %in% c("Science",
+                         "The teachings of your religion",
+                         "(It depends)")) %>%
   filter(!is.na(Region)) %>%
   group_by(Region, Response) %>%
   summarise(n = sum(`Unweighted Count...5`, na.rm = TRUE), .groups = "drop") %>%
@@ -426,12 +471,14 @@ q30_region_summary <- wgm_clean %>%
   mutate(Percent = n / sum(n) * 100) %>%
   ungroup()
 
+
 # ✅ Recode labels to match fill colors
 q30_region_summary <- q30_region_summary %>%
   mutate(Response = recode(Response,
     "The teachings of your religion" = "Religion",
     "(It depends)" = "It depends"
-  ))
+  )
+)
 
 ```
 
@@ -439,9 +486,11 @@ q30_region_summary <- q30_region_summary %>%
 #| fig-width: 20
 #| fig-height: 32
 
+
 library(ggplot2)
 library(ggtext)
 library(plotly)
+
 
 # ggplot object with tooltip and custom styling
 q30_hover_plot <- ggplot(q30_region_summary, aes(
@@ -449,7 +498,8 @@ q30_hover_plot <- ggplot(q30_region_summary, aes(
   y = Percent,
   fill = Response,
   text = paste0(Response, ": ", round(Percent, 1), "%")
-)) +
+  )
+) +
   geom_col(position = "dodge", width = 0.75) +
   scale_y_continuous(
     breaks = seq(0, 75, by = 12.5),
@@ -484,10 +534,11 @@ q30_hover_plot <- ggplot(q30_region_summary, aes(
   ) +
   coord_flip()
 
+
 # Convert to interactive plot with custom title + subtitle
 ggplotly(q30_hover_plot, tooltip = "text") %>%
   layout(
-    margin = list(l = 0, r = 10, t = 130, b = 50),  # Make room for two-line title
+    margin = list(l = 0, r = 10, t = 130, b = 50),
     title = list(
       text = paste0(
         "<span style='font-size:18px'><b>Which Are You More Likely to Believe When There is Disagreement?</b></span><br>",
