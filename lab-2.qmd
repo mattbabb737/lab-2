@@ -238,10 +238,17 @@ Be sure to cite both the page number and figure title. Do your best to tell the
 story of this graph in words. That is, what is this graph telling you? What do
 you think the authors meant to convey with it?
 
+##### Original image (*Source: Wellcome Global Monitor, 2018, p. 92.*)
 
+![science_jobs_original.jpg](science_jobs_original.jpg)
 
 8. List the variables that appear to be displayed in this visualization.
 
+Variables include:
+
+- Global regions
+- Net impact score of technology on jobs in the next five years (percentage of people who said "Increase" minus percentage of people who said "Decrease")
+- Positive vs Negative net percentages (color coded as <span style="color:#FFD700"><strong>Yellow</strong></span> or <span style="color:#002147"><strong>Dark Blue</strong></span>)
 
 
 9. Now that you're versed in the grammar of graphics (ggplot), list the
@@ -341,10 +348,21 @@ Be sure to cite both the page number and figure title. Do your best to tell the
 story of this graph in words. That is, what is this graph telling you? What do
 you think the authors meant to convey with it?
 
+##### Original image (*Source: Wellcome Global Monitor, 2018, p. 98.*)
+![religion_science_disagreement.jpg](religion_science_disagreement.jpg)
+
+
+This plot intends to show how people tend to resolve informational disputes between science and the beliefs of their religion. Respondents had the choice of selecting "science", "the teachings of my religion", or "it depends". Response rates are grouped by answer choice and also by geographical region.
 
 
 14. List the variables that appear to be displayed in this visualization.
 
+Variables include:
+
+- Percentage of people who believe science, their religion, or "it depends" when faced with an informational conflict between the two
+- Global region
+- Region medians
+- Countries
 
 
 15. Now that you're versed in the grammar of graphics (ggplot), list the
