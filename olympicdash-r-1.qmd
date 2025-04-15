@@ -2,10 +2,12 @@
 title: "Olympic Games"
 format: 
   dashboard:
+      orientation: columns
       nav-buttons: [github]
       github: https://github.com/mattbabb737/olympicdash
 logo: olympics-logo.svg
-
+logo-alt: Olympics logo with multicolored circles.
+embed-resources: true
 ---
 
 ```{r}
@@ -39,7 +41,9 @@ olympics <- olympics_full |>
   mutate(medal = fct_relevel(medal, "Bronze", "Silver", "Gold"))
 ```
 
-## Medals by sport
+## Column - Plots
+
+### Medals by sport {height="60%"}
 
 ```{r}
 #| title: Medals by sport
@@ -68,7 +72,7 @@ olympics |>
   )
 ```
 
-## Medals by year
+### Medals by year {height="40%"}
 
 ```{r}
 #| title: Medals by year
@@ -95,7 +99,7 @@ olympics |>
   )
 ```
 
-## Medals by country
+## Column - Medals by country
 
 ```{r}
 #| title: Medals by country
